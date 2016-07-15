@@ -8,16 +8,22 @@
 #include<sys/wait.h>
 #include<netdb.h>
 
+#include<pthread.h>
+
 /* 服务器程序监听的端口号 */
 #define PORT 8848
 
 /* 一次所能够接收的最大字节数 */
-#define MAX_DATA_SIZE 256
+#define MAX_BUF_SIZE 256
+
+/* 处理终端交互的线程和入口函数 */
+pthread_t pthd_io;
+void *ioHandler(void *argc);
 
 int main(int argc, char** argv)
 {
 	int sockfd, numbytes;
-	char buf[MAX_DATA_SIZE];
+	char buf[MAX_BUF_SIZE];
 	struct hostent *he;
 
 	/* 客户端的主机信息 */
@@ -60,13 +66,21 @@ int main(int argc, char** argv)
 		perror("connect");
 		exit(1);
 	}
+	else
+	{
+		pthread_create(&pthd_io, NULL, ioHandler, NULL);
+	}
+	/* 一直接受服务器数据，默认不关心数据来源 */
 	while(1)
 	{
-		if ((numbytes = recv(sockfd, buf, MAX_DATA_SIZE, 0)) == -1)
+		if ((numbytes = recv(sockfd, buf, MAX_BUF_SIZE, 0)) == -1)
 		{
 			perror("recv");
 			exit(1);
 		}
+		/* 此处添加异常处理，如果捕捉到服务器异常断开连接
+		 * retry connect，使用指数补偿算法，尝试重新连接N次，
+		 * 如仍未成功连接，则断开连接，关闭socket*/
 
 		buf[numbytes] = '\0';
 		printf("Received: %s\n", buf);
@@ -76,4 +90,22 @@ int main(int argc, char** argv)
 	return 0;
 }
 
+/* 处理终端交互线程的入口函数
+* 返回值：void*
+* 传入参数：void*,根据实际传入的参数，将参数指针赋给argc，若不止一个参数，
+* 则放在一个结构体内，将结构体指针传入*/
+void *ioHandler(void *argc)
+{
+	char strin[MAX_BUF_SIZE];
 
+	while(1)
+	{
+		if(fgets(strin, MAX_BUF_SIZE, stdin))
+		{
+			strin[strlen(strin) - 1] = '\0';
+			printf("thread %d: %s\n", getpid(), strin);
+			memset(strin, 0, MAX_BUF_SIZE);
+		}
+	}
+	return ((void*)0);
+}
