@@ -292,13 +292,6 @@ int sendToClient(client_list *head, int sockfd, char *str_send, int len)
     if ((NULL == head) || (sockfd <= 0) || (NULL == str_send) || (len <= 0))
         return --ret;
 
-    /* 错误输入了服务器的sockfd */
-    if (head->sock_fd == sockfd)
-    {
-        printf("这是服务器的，请输入正确的客户端sockfd\n");
-        return --ret;
-    }
-
     /* 输入错误的sockfd */
     if (!(searchClient(head, sockfd)))
     {
@@ -307,15 +300,8 @@ int sendToClient(client_list *head, int sockfd, char *str_send, int len)
     }
 
     /* 向客户端发送消息 */
-    if (send(sockfd, str_send, len, 0))
-    {
-        printf("向客户端 %d 发送消息成功\n", sockfd);
-    }
-    else
-    {
-        printf("向客户端 %d 发送消息失败\n", sockfd);
-        return --ret;
-    }
+    if (!(send(sockfd, str_send, len, 0)))
+        ret--;
 
     return ret;
 }
@@ -326,8 +312,7 @@ int sendToClientFunc(client_list *head)
     int ret = 0;
 
      /* 首先打印出当前在线的客户端 */
-    printf("请从下列在线的客户端中选择目标客户端\n");
-    printf("并以“sockfd:string”的格式输入选中的sockfd和发送的字符串\n");
+    printf("请从下列在线的客户端中选择目标，输入对应sockfd\n");
     printf("或输入 --exit退出，返回主菜单\n");
 
     printAll(head);
@@ -338,12 +323,10 @@ int sendToClientFunc(client_list *head)
     int len;
     char exit_order[10];
 
-    /* 如果上一次数据没有读完，则将flag置为1，表示直接将数据发送
-     * 不再根据格式判断 */
-
-    setbuf(stdin, NULL);
+    //setbuf(stdin, NULL);
     while (1)
     {
+        setbuf(stdin, NULL);
         if ((fgets(str, MAX_BUF_SIZE, stdin)))
         {
             sscanf(str, "%s", exit_order);
@@ -367,15 +350,23 @@ int sendToClientFunc(client_list *head)
                 ret--;
                 continue;
             }
+            if (head->sock_fd == sockfd)
+            {
+                printf("这是服务器的，请输入正确的客户端sockfd\n");
+                ret--;
+                continue;
+            }
+
             memset(str, 0, strlen(str));
 
             /* 循环发送 */
             printf("输入待发送的字符串，或--exit返回上级选项\n");
-            printf("发送到客户端 %d: \n", sockfd);
+            printf("发送到客户端 %d: ", sockfd);
             while (1)
             {
                 if ((fgets(str, MAX_BUF_SIZE, stdin)))
                 {
+                    sscanf(str, "%s", exit_order);
                     /* 输入--exit，退出当前功能，返回主页 */
                     if (!(strcmp(exit_order, EXIT)))
                     {
@@ -392,9 +383,16 @@ int sendToClientFunc(client_list *head)
                         printf("发送成功\n");
                     memset(str, 0 ,strlen(str));
 
-                    printf("发送到客户端 %d: \n", sockfd);
+                    printf("发送到客户端 %d: ", sockfd);
                 }
             }
+
+            printf("请从下列在线的客户端中选择目标，输入对应sockfd\n");
+            printf("或输入 --exit退出，返回主菜单\n");
+
+            printAll(head);
+            printf("-->");
+
             sockfd = 0;
             /* 清空缓存 */
             memset(str, 0, strlen(str));

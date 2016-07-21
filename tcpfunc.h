@@ -12,6 +12,7 @@
 #define CLOSECLIENT     '4'
 #define CLOSESERVER     '5'
 
+/* 退出当前选项命令 */
 #define EXIT            "--exit"
 
 /* 链表结点 */
@@ -27,6 +28,7 @@ typedef struct _client_list
     int sock_fd;
     struct sockaddr_in their_addr;
 }client_list;
+
 /***********链表操作相关函数*************/
 /* 创建客户端列表 */
 client_list *clist_create(void);
