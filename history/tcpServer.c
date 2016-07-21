@@ -17,8 +17,6 @@
 /* 能够同时接受多少没有accept的连接 */
 #define BACKLOG 10
 
-const char exitcode[10] = "--exit";
-
 /* 处理终端交互的线程,入口函数,传入参数的结构体,输入缓冲区 */
 pthread_t pthd_io;
 void *ioHandler(void *argc);
@@ -116,10 +114,7 @@ int initserver(int type, struct sockaddr *addr, socklen_t alen, int qlen)
     /* 调用socket()，生成服务器原始的套接字描述符 */
     if ((fd = socket(addr->sa_family, type, 0)) < 0)
     {
-#ifdef DEBUG_ON
-        printf("faile to create sockfd\n");
-#endif
-        return -1;
+            return -1;
     }
     /* 将套接字描述符sockfd与地址绑定my_addr */
 
@@ -148,61 +143,10 @@ errout:
 void *ioHandler(void *argc)
 {
 	char strin[MAX_BUF_SIZE];
-    int homecommand;
-    int len;
+    //printAllClient((client_list *)argc);
     homePage();
-    char str[MAX_BUF_SIZE];
-
 	while(1)
 	{
-        if ((homecommand = fgetc(stdin)) && (homecommand != '\n'))
-        {
-            switch(homecommand)
-            {
-                /* 打印帮助信息 */
-                case HELP:
-                    printhelp();
-                    homePage();
-                    break;
-
-                /* 显示所有服务器和客户端列表 */
-                case DISPLAYALL:
-                    printAll((client_list *)argc);
-                    homePage();
-                    break;
-
-                /* 向所有客户端广播消息 */
-                case BROADCAST:
-                    broadcastFunc((client_list *)argc);
-                    homePage();
-                    break;
-
-                /* 向指定客户端发送消息 */
-                case SENDTOCLIENT:
-                    sendToClientFunc((client_list *)argc);
-                    homePage();
-                    break;
-
-                /* 关闭指定客户端连接 */
-                case CLOSECLIENT:
-                    printf("close the client\n");
-                    break;
-
-                /* 关闭服务器和所有客户端连接 */
-                case CLOSESERVER:
-                    printf("close the server\n");
-                    close(((client_list *)argc)->sock_fd);
-                    exit(0);
-                    break;
-
-                default:
-                    printf("请输入正确的对应数字，如下所示\n");
-                    homePage();
-                    break;
-
-            }
-        }
-        /*
 		if(fgets(strin, MAX_BUF_SIZE, stdin))
 		{
 			strin[strlen(strin) - 1] = '\0';
@@ -223,6 +167,7 @@ void *ioHandler(void *argc)
                 printf("search reasult is %d\n", list_next->sock_fd);
             }
             else printf("sockfd %d not found\n", 9);
+            /*
              if ((erronum = delClient((client_list *)argc, new_sockfd)) == 0)
             {
                 printf("delete sockfd %d client successfully\n", new_sockfd);
@@ -231,7 +176,9 @@ void *ioHandler(void *argc)
                 printf("erro number %d\n", erronum);
             printAllClient((client_list *)argc);
             */
+            }
 		}
+	}
 	return ((void *)0);
 }
 

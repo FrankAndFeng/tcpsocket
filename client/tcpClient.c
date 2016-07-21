@@ -19,8 +19,12 @@
 /* 重新连接服务器的最大等待时间 */
 #define MAXSLEEP 64
 
-/* 服务器断开重练函数 */
+/* 服务器断开重连 */
 int connect_retry(int sockfd, const struct sockaddr *addr, socklen_t alen);
+
+/* 可移植的断开重连函数 */
+int connect_retry_new(int domain, int type, int protocol,
+        const struct sockaddr *sockfd, socklen_t alen);
 
 /* 处理终端交互的线程和入口函数,以及输入参数 */
 pthread_t pthd_io;
@@ -92,12 +96,13 @@ int main(int argc, char** argv)
 		if (numbytes > 0)
 		{
 			buf[numbytes] = '\0';
-			printf("Received: %s\n", buf);
+			printf("Received from server: %s\n", buf);
 		}
 		else
 		{
-            int res = connect_retry(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr));
-            if (res != 0)
+            //int res = connect_retry(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr));
+            int sockfd = connect_retry_new(AF_INET, SOCK_STREAM, 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr));
+            if (sockfd == -1)
             {
                 close(sockfd);
 			    perror("recv");
@@ -157,3 +162,24 @@ int connect_retry(int sockfd, const struct sockaddr *addr, socklen_t alen)
     return -1;
 }
 
+int connect_retry_new(int domain, int type, int protocol, const struct sockaddr *addr, socklen_t alen)
+{
+    int numsec, fd;
+
+    for (numsec = 1; numsec <= MAXSLEEP; numsec <<= 1)
+    {
+        printf("retrying connect...\n");
+        if ((fd = socket(domain, type, protocol)) < 0)
+            return -1;
+        if (connect(fd, addr, alen) == 0)
+        {
+            return fd;
+        }
+        close(fd);
+        if  (numsec <= MAXSLEEP/2)
+        {
+            sleep(numsec);
+        }
+    }
+    return -1;
+}

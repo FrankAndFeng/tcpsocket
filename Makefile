@@ -3,6 +3,6 @@ tcpserver:tcpfunc.o tcpserver.o
 tcpfunc.o:tcpfunc.h tcpfunc.c
 	gcc -c tcpfunc.c -o tcpfunc.o -lpthread
 tcpserver.o:tcpServer.c tcpfunc.h
-	gcc -c tcpServer.c -o tcpserver.o -lpthread
+	gcc -c tcpServer.c -D DEBUG_ON -o tcpserver.o -lpthread
 clean:
 	rm tcpfunc.o tcpserver.o
